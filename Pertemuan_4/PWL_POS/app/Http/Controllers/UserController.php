@@ -29,6 +29,9 @@ class UserController extends Controller
         return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level,'activeMenu' => $activeMenu]);
     }
 
+    
+    
+
     // Ambil data user dalam bentuk json untuk datatables
     public function list(Request $request)
     {
@@ -51,6 +54,9 @@ class UserController extends Controller
             ->rawColumns(['aksi'])
             ->make(true);
     }
+
+    
+
 
     public function create()
     {

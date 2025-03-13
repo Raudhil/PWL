@@ -57,10 +57,18 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url('/barang') }}"
+                <a href="{{ url('/penjualan') }}"
                     class="nav-link {{ $activeMenu == 'penjualan' ? 'active' : '' }} ">
                     <i class="nav-icon fas fa-cash-register"></i>
                     <p>Transaksi Penjualan</p>
+                </a>
+            </li>
+            <li class="nav-header">Data Supplier</li>
+            <li class="nav-item">
+                <a href="{{ url('/supplier') }}"
+                    class="nav-link {{ $activeMenu == 'supplier' ? 'active' : '' }} ">
+                    <i class="nav-icon fas fa-truck"></i>
+                    <p>Data Supplier</p>
                 </a>
             </li>
         </ul>
