@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
 use App\Models\UserModel;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
@@ -26,11 +27,11 @@ class UserController extends Controller
 
         $level = LevelModel::all();
 
-        return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level,'activeMenu' => $activeMenu]);
+        return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
     }
 
-    
-    
+
+
 
     // Ambil data user dalam bentuk json untuk datatables
     public function list(Request $request)
@@ -38,9 +39,9 @@ class UserController extends Controller
         $users = UserModel::select('user_id', 'username', 'nama', 'level_id')
             ->with('level');
 
-            if($request->level_id){
-                $users->where('level_id', $request->level_id);
-            }
+        if ($request->level_id) {
+            $users->where('level_id', $request->level_id);
+        }
 
         return DataTables::of($users)
             // menambahkan kolom index / no urut (default nama kolom: DT_RowIndex) 
@@ -55,7 +56,7 @@ class UserController extends Controller
             ->make(true);
     }
 
-    
+
 
 
     public function create()
@@ -110,7 +111,8 @@ class UserController extends Controller
         return view('user.show', ['breadcrumb' => $breadcrumb, 'page' => $page, 'user' => $user, 'activeMenu' => $activeMenu]);
     }
 
-    public function edit(string $id){
+    public function edit(string $id)
+    {
         $user = UserModel::find($id);
         $level = LevelModel::all();
 
@@ -127,39 +129,75 @@ class UserController extends Controller
 
         return view('user.edit', ['breadcrumb' => $breadcrumb, 'page' => $page, 'user' => $user, 'level' => $level, 'activeMenu' => $activeMenu]);
     }
-    
-    public function update(Request $request, string $id){
+
+    public function update(Request $request, string $id)
+    {
         $request->validate([
             'username' => 'required|string|min:3|unique:m_user,username,' . $id . ',user_id',
             'nama' => 'required|string|max:100',
             'password' => 'nullable|min:5',
             'level_id' => 'required|integer'
         ]);
-        
+
         UserModel::where('user_id', $id)->update([
             'username' => $request->username,
             'nama' => $request->nama,
             'password' => $request->password ? bcrypt($request->password) : UserModel::find($id)->password,
             'level_id' => $request->level_id
         ]);
-    
+
         return redirect('/user')->with('success', 'Data user berhasil diubah');
     }
 
-    public function destroy(string $id){
-        
+    public function destroy(string $id)
+    {
+
         $check = UserModel::find($id);
-        if (!$check){
+        if (!$check) {
             return redirect('/user')->with('error', 'Data user tidak ditemukan');
         }
 
-        try{
+        try {
             UserModel::destroy($id);
             return redirect('/user')->with('success', 'Data user berhasil dihapus');
-
-        } catch(\Illuminate\Database\QueryException $e){
+        } catch (\Illuminate\Database\QueryException $e) {
             return redirect('/user')->with('error', 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini.');
         }
     }
-    
+
+    public function create_ajax()
+    {
+        $level = LevelModel::select('level_id', 'level_nama')->get();
+
+        return view('user.create_ajax')->with('level', $level);
+    }
+
+    public function store_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'level_id' => 'required|integer',
+                'username' => 'required|string|min:3|unique:m_user,username',
+                'nama' => 'required|string|max:100',
+                'password' => 'required|min:6'
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+            UserModel::create($request->all());
+            return response()->json([
+                'status' => true,
+                'message' => 'Data user berhasil disimpan'
+            ]);
+        }
+        redirect('/');
+    }
 }
