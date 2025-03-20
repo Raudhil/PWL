@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Barang;
+use App\Models\Kategori;
 use App\Models\LevelModel;
+use App\Models\Supplier;
 use App\Models\UserModel;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -165,39 +168,59 @@ class UserController extends Controller
 
     public function create_ajax()
     {
-        $level = LevelModel::select('level_id', 'level_nama')->get();
-
-        return view('user.create_ajax')->with('level', $level);
+        $kategori = Kategori::all();
+        return view('barang.create_ajax', ['kategori' => $kategori]);
     }
+
 
     public function store_ajax(Request $request)
     {
+        $request->validate([
+            'kategori_id' => 'required|integer|exists:m_kategori,kategori_id',
+            'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode',
+            'barang_nama' => 'required|string|min:3|unique:m_barang,barang_nama',
+            'harga_beli' => 'required|integer|min:1',
+            'harga_jual' => 'required|integer|min:1'
+        ]);
+
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                'level_id' => 'required|integer',
-                'username' => 'required|string|min:3|unique:m_user,username',
-                'nama' => 'required|string|max:100',
-                'password' => 'required|min:6'
+                'kategori_id' => 'required|integer|exists:m_kategori,kategori_id',
+                'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode',
+                'barang_nama' => 'required|string|min:3|unique:m_barang,barang_nama',
+                'harga_beli' => 'required|integer|min:1',
+                'harga_jual' => 'required|integer|min:1'
             ];
-
             $validator = Validator::make($request->all(), $rules);
 
             if ($validator->fails()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Validasi Gagal',
-                    'msgField' => $validator->errors(),
+                    'msgField' => $validator->errors()
                 ]);
             }
 
-            UserModel::create($request->all());
+            Barang::table('m_barang')->insert([
+                'kategori_id' => $request->kategori_id,
+                'barang_kode' => $request->barang_kode,
+                'barang_nama' => $request->barang_nama,
+                'harga_beli' => $request->harga_beli,
+                'harga_jual' => $request->harga_jual,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
             return response()->json([
                 'status' => true,
-                'message' => 'Data user berhasil disimpan'
+                'message' => 'Data barang berhasil disimpan'
             ]);
         }
-        redirect('/');
+
+        return redirect('/');
     }
+
+
 
     public function edit_ajax(String $id)
     {
@@ -253,28 +276,34 @@ class UserController extends Controller
         }
     }
 
-    public function confirm_ajax(String $id){
+    public function confirm_ajax(String $id)
+    {
         $user = UserModel::find($id);
 
         return view('user.confirm_ajax', ['user' => $user]);
     }
 
-    public function delete_ajax(Request $request, $id){
-        if($request->ajax() || $request->wantsJson()){
-            $user = UserModel::find($id);
-            if($user){
-                $user->delete();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data berhasil dihapus'
-                ]);
-            } else{
+    public function delete_ajax($id)
+    {
+        try {
+            $user = UserModel::findOrFail($id);
+            $user->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User berhasil dihapus'
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == "23000") {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Data tidak ditemukan'
+                    'message' => 'User tidak bisa dihapus karena memiliki data terkait'
                 ]);
             }
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menghapus user'
+            ]);
         }
-        return redirect('/');
     }
 }

@@ -1,4 +1,4 @@
-@empty($user)
+@empty($kategori)
     <div id="myModal" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -10,20 +10,20 @@
             <div class="modal-body">
                 <div class="alert alert-danger">
                     <h5><i class="icon fas fa-ban"></i> Kesalahan!!!</h5>
-                    Data yang anda cari tidak ditemukan
+                    Data yang Anda cari tidak ditemukan.
                 </div>
-                <a href="{{ url('/user') }}" class="btn btn-warning">Kembali</a>
+                <a href="{{ url('/kategori') }}" class="btn btn-warning">Kembali</a>
             </div>
         </div>
     </div>
 @else
-    <form action="{{ url('/user/' . $user->user_id . '/delete_ajax') }}" method="POST" id="formdelete">
+    <form action="{{ url('/kategori/' . $kategori->kategori_id . '/delete_ajax') }}" method="POST" id="form-delete">
         @csrf
         @method('DELETE')
-        <div id="myModal" class="modal-dialog modal-lg" role="document">
+        <div id="modal-master" class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Hapus Data User</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">Hapus Data Kategori</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -31,20 +31,16 @@
                 <div class="modal-body">
                     <div class="alert alert-warning">
                         <h5><i class="icon fas fa-ban"></i> Konfirmasi !!!</h5>
-                        Apakah Anda ingin menghapus data seperti di bawah ini?
+                        Apakah Anda ingin menghapus kategori ini?
                     </div>
                     <table class="table table-sm table-bordered table-striped">
                         <tr>
-                            <th class="text-right col-3">Level Pengguna :</th>
-                            <td class="col-9">{{ $user->level->level_nama }}</td>
+                            <th class="text-right col-3">Nama Kategori :</th>
+                            <td class="col-9">{{ $kategori->kategori_nama }}</td>
                         </tr>
                         <tr>
-                            <th class="text-right col-3">Username :</th>
-                            <td class="col-9">{{ $user->username }}</td>
-                        </tr>
-                        <tr>
-                            <th class="text-right col-3">Nama :</th>
-                            <td class="col-9">{{ $user->nama }}</td>
+                            <th class="text-right col-3">Deskripsi :</th>
+                            <td class="col-9">{{ $kategori->deskripsi }}</td>
                         </tr>
                     </table>
                 </div>
@@ -58,7 +54,8 @@
 
     <script>
         $(document).ready(function() {
-            $("#formdelete").validate({
+            $("#form-delete").validate({
+                rules: {},
                 submitHandler: function(form) {
                     $.ajax({
                         url: form.action,
@@ -66,17 +63,21 @@
                         data: $(form).serialize(),
                         success: function(response) {
                             if (response.status) {
-                                $('#myModal').modal('hide');
+                                $('#modal-master').modal('hide');
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil',
                                     text: response.message
                                 });
-                                dataUser.ajax.reload();
+                                dataKategori.ajax.reload();
                             } else {
+                                $('.error-text').text('');
+                                $.each(response.msgField, function(prefix, val) {
+                                    $('#error-' + prefix).text(val[0]);
+                                });
                                 Swal.fire({
                                     icon: 'error',
-                                    title: 'Gagal Menghapus',
+                                    title: 'Terjadi Kesalahan',
                                     text: response.message
                                 });
                             }
