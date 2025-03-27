@@ -31,6 +31,7 @@
     <div class="wrapper">
         <!-- Navbar -->
         @include('layouts.header')
+        
         <!-- /.navbar -->
 
         <!-- Main Sidebar Container -->
