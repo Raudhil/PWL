@@ -15,6 +15,7 @@ class AuthController extends Controller
         }
         return view('auth.login');
     }
+
     public function postlogin(Request $request)
     {
         if ($request->ajax() || $request->wantsJson()) {
@@ -33,6 +34,7 @@ class AuthController extends Controller
         }
         return redirect('login');
     }
+
 
     public function register()
     {
