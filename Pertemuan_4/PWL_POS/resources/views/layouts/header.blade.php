@@ -132,8 +132,56 @@
         </li>
         <li class="nav-item">
             <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
-                <i class="fas fa-th-large"></i> 
+                <i class="fas fa-th-large"></i>
             </a>
+        </li>
+        
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{{ asset('profile-picture/' . (session('profile_picture') ?? 'gambar.png')) }}"
+                    onerror="this.src='{{ asset('profile-picture/gambar.png') }}'" alt="Profile"
+                    class="rounded-circle" width="30" height="30">
+
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        Ganti Profile Picture
+                    </a>
+                </li>
+            </ul>
         </li>
     </ul>
 </nav>
+
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Ganti Foto Profil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form action="{{ url('upload-profile') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="profilePicture" class="form-label">Pilih gambar baru</label>
+                        <input class="form-control" type="file" id="profi lePicture" name="profilePicture"
+                            accept="image/*" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>

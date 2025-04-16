@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\LevelModel;
+
 
 class AuthController extends Controller
 {
@@ -38,29 +40,32 @@ class AuthController extends Controller
 
     public function register()
     {
-        return view('auth.register');
+        $levels = LevelModel::all(); // Ambil semua data level dari database
+        return view('auth.register', compact('levels'));
     }
+
 
     public function postregister(Request $request)
     {
+        return response()->json($request->all());
+
+
+        // Validasi semua input
         $request->validate([
             'username' => 'required',
-            'password' => 'required',
+            'nama' => 'required',
+            'level_id' => 'required',
+            'password' => 'required|confirmed',
         ]);
+
+        // Simpan data user
         $user = new UserModel;
         $user->username = $request->username;
         $user->nama = $request->nama;
         $user->password = bcrypt($request->password);
-        $user->level_id = 4;
+        $user->level_id = $request->level_id; // dari input user, bukan angka 4
         $user->save();
-        return redirect('login');
-    }
 
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
         return redirect('login');
     }
 }

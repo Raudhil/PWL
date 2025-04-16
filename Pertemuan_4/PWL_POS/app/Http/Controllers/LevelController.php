@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LevelController extends Controller
 {
@@ -249,5 +252,165 @@ class LevelController extends Controller
                 'message' => 'Terjadi kesalahan saat menghapus Level'
             ]);
         }
+    }
+
+    public function import()
+    {
+        return view('level.import'); // ubah sesuai view untuk import user
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_level' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_level');
+                $reader = IOFactory::createReader('Xlsx');
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true); // Ambil data per kolom dengan huruf
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati header
+                            // Validasi isi kolom A, B, C
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C'])) {
+                                throw new \Exception("Data tidak lengkap pada baris $baris.");
+                            }
+
+                            // Validasi level_id harus angka
+                            if (!is_numeric($value['A'])) {
+                                throw new \Exception("Level ID pada baris $baris harus berupa angka.");
+                            }
+
+                            // Cek duplikat berdasarkan level_id atau level_kode
+                            $exists = LevelModel::where('level_id', $value['A'])
+                                ->orWhere('level_kode', $value['B'])
+                                ->exists();
+                            if ($exists) {
+                                throw new \Exception("Data dengan ID {$value['A']} atau kode {$value['B']} pada baris $baris sudah ada.");
+                            }
+
+                            $insert[] = [
+                                'level_id' => $value['A'],
+                                'level_kode' => $value['B'],
+                                'level_nama' => $value['C'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $inserted = LevelModel::insert($insert);
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data level berhasil diimport (" . count($insert) . " baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import level gagal', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data level: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
+        return redirect('/level');
+    }
+
+
+    public function export_excel()
+    {
+        $levels = Level::select('level_id', 'level_kode', 'level_nama')
+            ->orderBy('level_id')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header kolom
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Level ID');
+        $sheet->setCellValue('C1', 'Kode Level');
+        $sheet->setCellValue('D1', 'Nama Level');
+
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true); // bold header
+
+        $no = 1;
+        $baris = 2;
+
+        foreach ($levels as $level) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $level->level_id);
+            $sheet->setCellValue('C' . $baris, $level->level_kode);
+            $sheet->setCellValue('D' . $baris, $level->level_nama);
+
+            $baris++;
+            $no++;
+        }
+
+        foreach (range('A', 'D') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data Level');
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data Level ' . date('Y-m-d H-i-s') . '.xlsx';
+
+        // Output ke browser
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment; filename=\"$filename\"");
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $level = Level::select('level_id', 'level_kode', 'level_nama')
+            ->orderBy('level_id')
+            ->get();
+
+        $pdf = Pdf::loadView('level.export_pdf', ['level' => $level]);
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption("isRemoteEnabled", true);
+        $pdf->render();
+
+        return $pdf->stream('Data Level ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }

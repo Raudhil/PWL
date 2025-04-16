@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Kategori;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class KategoriController extends Controller
 {
@@ -252,5 +255,167 @@ class KategoriController extends Controller
                 'message' => 'Terjadi kesalahan saat menghapus kategori'
             ]);
         }
+    }
+
+    public function import()
+    {
+        return view('kategori.import'); // ubah sesuai view untuk import user
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_kategori' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_kategori');
+                $reader = IOFactory::createReader('Xlsx');
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C'])) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi kategori_id numerik
+                            if (!is_numeric($value['B'])) {
+                                throw new \Exception("Kategori ID pada baris $baris harus berupa angka.");
+                            }
+
+                            // Validasi kategori_kode unik
+                            if (Kategori::where('kategori_kode', $value['A'])->exists()) {
+                                throw new \Exception("Kategori Kode '{$value['A']}' pada baris $baris sudah ada.");
+                            }
+
+                            $insert[] = [
+                                'kategori_kode' => $value['A'],
+                                'kategori_id' => $value['B'],
+                                'kategori_nama' => $value['C'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $insertedCount = Kategori::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import kategori gagal', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        return redirect('/kategori');
+    }
+
+
+
+    public function export_excel()
+    {
+        $kategoris = Kategori::select('kategori_id', 'kategori_kode', 'kategori_nama')
+            ->orderBy('kategori_id')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header kolom
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'ID Kategori');
+        $sheet->setCellValue('C1', 'Kode Kategori');
+        $sheet->setCellValue('D1', 'Nama Kategori');
+
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true); // bold header
+
+        $no = 1;
+        $baris = 2;
+
+        foreach ($kategoris as $kategori) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $kategori->kategori_id);
+            $sheet->setCellValue('C' . $baris, $kategori->kategori_kode);
+            $sheet->setCellValue('D' . $baris, $kategori->kategori_nama);
+
+            $baris++;
+            $no++;
+        }
+
+        foreach (range('A', 'D') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data Kategori');
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data Kategori ' . date('Y-m-d H-i-s') . '.xlsx';
+
+        // Output ke browser
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment; filename=\"$filename\"");
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $kategori = Kategori::select('kategori_id', 'kategori_kode', 'kategori_nama')
+            ->orderBy('kategori_id')
+            ->get();
+
+        $pdf = Pdf::loadView('kategori.export_pdf', ['kategori' => $kategori]);
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption("isRemoteEnabled", true);
+        $pdf->render();
+
+        return $pdf->stream('Data Kategori ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }

@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
-
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class UserController extends Controller
 {
@@ -33,7 +35,7 @@ class UserController extends Controller
         return view('user.index', ['breadcrumb' => $breadcrumb, 'page' => $page, 'level' => $level, 'activeMenu' => $activeMenu]);
     }
 
-    // Ambil data user dalam bentuk JSON untuk DataTables
+
     public function list(Request $request)
     {
         $users = UserModel::select('user_id', 'username', 'nama', 'level_id')
@@ -55,7 +57,6 @@ class UserController extends Controller
             ->rawColumns(['aksi']) // Memberitahu bahwa kolom aksi adalah HTML
             ->make(true);
     }
-
 
 
 
@@ -168,28 +169,19 @@ class UserController extends Controller
 
     public function create_ajax()
     {
-        $kategori = Kategori::all();
-        return view('barang.create_ajax', ['kategori' => $kategori]);
+        $level = LevelModel::select('level_id', 'level_nama')->get(); // ambil data level untuk ditampilkan di form
+        return view('user.create_ajax', ['level' => $level]);
     }
 
 
     public function store_ajax(Request $request)
     {
-        $request->validate([
-            'kategori_id' => 'required|integer|exists:m_kategori,kategori_id',
-            'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode',
-            'barang_nama' => 'required|string|min:3|unique:m_barang,barang_nama',
-            'harga_beli' => 'required|integer|min:1',
-            'harga_jual' => 'required|integer|min:1'
-        ]);
-
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                'kategori_id' => 'required|integer|exists:m_kategori,kategori_id',
-                'barang_kode' => 'required|string|min:3|unique:m_barang,barang_kode',
-                'barang_nama' => 'required|string|min:3|unique:m_barang,barang_nama',
-                'harga_beli' => 'required|integer|min:1',
-                'harga_jual' => 'required|integer|min:1'
+                'username' => 'required|string|min:3|unique:m_user,username',
+                'nama' => 'required|string|max:100',
+                'password' => 'required|min:6',
+                'level_id' => 'required|integer'
             ];
             $validator = Validator::make($request->all(), $rules);
 
@@ -201,23 +193,13 @@ class UserController extends Controller
                 ]);
             }
 
-            Barang::table('m_barang')->insert([
-                'kategori_id' => $request->kategori_id,
-                'barang_kode' => $request->barang_kode,
-                'barang_nama' => $request->barang_nama,
-                'harga_beli' => $request->harga_beli,
-                'harga_jual' => $request->harga_jual,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
+            UserModel::create($request->all());
             return response()->json([
                 'status' => true,
-                'message' => 'Data barang berhasil disimpan'
+                'message' => 'Data user berhasil disimpan'
             ]);
         }
-
-        return redirect('/');
+        redirect('/');
     }
 
 
@@ -305,5 +287,176 @@ class UserController extends Controller
                 'message' => 'Terjadi kesalahan saat menghapus user'
             ]);
         }
+    }
+
+    public function import()
+    {
+        return view('user.import'); // ubah sesuai view untuk import user
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_user' => ['required', 'mimes:xlsx', 'max:1024'] // Validasi file Excel, max 1MB
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            try {
+                $file = $request->file('file_user');
+                $reader = IOFactory::createReader('Xlsx'); // Perbaiki case
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($file->getRealPath());
+                $sheet = $spreadsheet->getActiveSheet();
+                $data = $sheet->toArray(null, false, true, true);
+
+                $insert = [];
+                if (count($data) > 1) {
+                    foreach ($data as $baris => $value) {
+                        if ($baris > 1) { // Lewati baris header
+                            // Validasi data sebelum insert
+                            if (empty($value['A']) || empty($value['B']) || empty($value['C']) || empty($value['D'])) {
+                                throw new \Exception("Data pada baris $baris tidak lengkap.");
+                            }
+
+                            // Validasi level_id
+                            $kategori = LevelModel::find($value['A']);
+                            if (!$kategori) {
+                                throw new \Exception("Level dengan ID {$value['A']} pada baris $baris tidak ditemukan.");
+                            }
+
+                            // Validasi username unik
+                            if (UserModel::where('username', $value['B'])->exists()) {
+                                throw new \Exception("Username {$value['B']} pada baris $baris sudah ada.");
+                            }
+
+                            // Validasi level_id harus angka
+                            if (!is_numeric($value['A'])) {
+                                throw new \Exception("Level ID pada baris $baris harus berupa angka.");
+                            }
+
+                            $insert[] = [
+                                'level_id' => $value['A'],
+                                'username' => $value['B'],
+                                'nama' => $value['C'],
+                                'password' => $value['D'],
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (count($insert) > 0) {
+                        $insertedCount = UserModel::insertOrIgnore($insert);
+                        if ($insertedCount === 0) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Tidak ada data yang berhasil diimport. Pastikan data valid dan tidak duplikat.'
+                            ]);
+                        }
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => "Data berhasil diimport ($insertedCount baris)"
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada data yang diimport'
+                        ]);
+                    }
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File Excel kosong atau tidak memiliki data'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Import failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengimpor data: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        return redirect('/user');
+    }
+
+    public function export_excel()
+    {
+        $users = UserModel::select('level_id', 'username', 'nama', 'password')
+            ->orderBy('level_id')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header kolom
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Level ID');
+        $sheet->setCellValue('C1', 'Username');
+        $sheet->setCellValue('D1', 'Nama');
+        $sheet->setCellValue('E1', 'Password');
+
+        $sheet->getStyle('A1:E1')->getFont()->setBold(true); // bold header
+
+        $no = 1;
+        $baris = 2;
+
+        foreach ($users as $user) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $user->level_id);
+            $sheet->setCellValue('C' . $baris, $user->username);
+            $sheet->setCellValue('D' . $baris, $user->nama);
+            $sheet->setCellValue('E' . $baris, $user->password);
+
+            $baris++;
+            $no++;
+        }
+
+        foreach (range('A', 'E') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data User');
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data User ' . date('Y-m-d H-i-s') . '.xlsx';
+
+        // Output ke browser
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment; filename=\"$filename\"");
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $user = UserModel::select('user_id', 'username', 'nama', 'level_id')
+            ->with('level') // jika ada relasi ke level
+            ->orderBy('user_id')
+            ->get();
+
+        $pdf = Pdf::loadView('user.export_pdf', ['user' => $user]);
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption("isRemoteEnabled", true);
+        $pdf->render();
+
+        return $pdf->stream('Data User ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }
