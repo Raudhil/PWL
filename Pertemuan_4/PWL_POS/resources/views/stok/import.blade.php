@@ -1,9 +1,9 @@
-<form action="{{ url('/level/import_ajax') }}" method="POST" id="form-import-level" enctype="multipart/form-data">
+<form action="{{ url('/stok/import_ajax') }}" method="POST" id="form-import" enctype="multipart/form-data">
     @csrf
-    <div id="modal-level" class="modal-dialog modal-lg" role="document">
+    <div id="modal-master" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import Data Level</h5>
+                <h5 class="modal-title">Import Data Stok</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -12,17 +12,19 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Download Template</label>
-                    <a href="{{ asset('template_level.xlsx') }}" class="btn btn-info btn-sm" download>
+                    <a href="{{ asset('template_stok.xlsx') }}" class="btn btn-info btn-sm" download>
                         <i class="fa fa-file-excel"></i> Download
                     </a>
-                    <small id="error-file_level" class="error-text form-text text-danger"></small>
+                    <small id="error-file_stok" class="error-text form-text text-danger"></small>
                 </div>
 
                 <div class="form-group">
                     <label>Pilih File</label>
-                    <input type="file" name="file_level" id="file_level" class="form-control" required>
-                    <small id="error-file_level" class="error-text form-text text-danger"></small>
+                    <input type="file" name="file_stok" id="file_stok" class="form-control" required>
+                    <small id="error-file_stok" class="error-text form-text text-danger"></small>
                 </div>
+
+
             </div>
 
             <div class="modal-footer">
@@ -35,11 +37,16 @@
 
 <script>
     $(document).ready(function() {
-        $("#form-import-level").validate({
+        $("#form-import").validate({
             rules: {
-                file_level: {
+                file_stok: {
                     required: true,
-                    extension: "xlsx"
+                    extension: "xlsx|xls"
+                }
+            },
+            messages: {
+                file_stok: {
+                    extension: "Hanya file Excel (.xlsx, .xls) yang diperbolehkan"
                 }
             },
             submitHandler: function(form) {
@@ -50,28 +57,43 @@
                     data: formData,
                     processData: false,
                     contentType: false,
+                    beforeSend: function() {
+                        $('.btn-primary').prop('disabled', true).html(
+                            '<i class="fa fa-spinner fa-spin"></i> Memproses...');
+                    },
+                    complete: function() {
+                        $('.btn-primary').prop('disabled', false).text('Upload');
+                    },
                     success: function(response) {
                         if (response.status) {
-                            $('#modal-level').modal('hide');
+                            $('#myModal').modal('hide');
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',
-                                text: response.message
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
                             });
-                            dataLevel.ajax.reload(); // ID DataTable level
+                            tableStok.ajax.reload(); // pastikan ini id datatable stok
                         } else {
                             $('.error-text').text('');
-                            if (response.msgField) {
-                                $.each(response.msgField, function(prefix, val) {
-                                    $('#error-' + prefix).text(val[0]);
-                                });
-                            }
+                            $.each(response.msgField, function(prefix, val) {
+                                $('#error-' + prefix).text(val[0]);
+                            });
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Terjadi Kesalahan',
                                 text: response.message
                             });
                         }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: xhr.responseJSON?.message ||
+                                'Terjadi kesalahan saat mengupload file'
+                        });
                     }
                 });
                 return false;

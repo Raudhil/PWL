@@ -38,92 +38,74 @@
         </li>
 
         <!-- Messages Dropdown Menu -->
-        <li class="nav-item dropdown">
-            <a class="nav-link" data-toggle="dropdown" href="#">
-                <i class="far fa-comments"></i>
-                <span class="badge badge-danger navbar-badge">3</span>
+        <li class="nav-item dropdown mx-2">
+            <a class="nav-link position-relative" data-toggle="dropdown" href="#">
+                <i class="fas fa-comment fa-lg"></i>
+                <span
+                    class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger badge-notif">
+                    3
+                </span>
             </a>
-            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                        <img src="../../dist/img/user1-128x128.jpg" alt="User Avatar"
-                            class="img-size-50 mr-3 img-circle">
-                        <div class="media-body">
-                            <h3 class="dropdown-item-title">
-                                Brad Diesel
-                                <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>
-                            </h3>
-                            <p class="text-sm">Call me whenever you can...</p>
-                            <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                        </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                        <img src="../../dist/img/user8-128x128.jpg" alt="User Avatar"
-                            class="img-size-50 img-circle mr-3">
-                        <div class="media-body">
-                            <h3 class="dropdown-item-title">
-                                John Pierce
-                                <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>
-                            </h3>
-                            <p class="text-sm">I got your message bro</p>
-                            <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                        </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                        <img src="../../dist/img/user3-128x128.jpg" alt="User Avatar"
-                            class="img-size-50 img-circle mr-3">
-                        <div class="media-body">
-                            <h3 class="dropdown-item-title">
-                                Nora Silvester
-                                <span class="float-right text-sm text-warning"><i class="fas fa-star"></i></span>
-                            </h3>
-                            <p class="text-sm">The subject goes here</p>
-                            <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                        </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
-            </div>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item custom-hover" href="#">Pesan 1</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item custom-hover" href="#">Pesan 2</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item custom-hover" href="#">Pesan 3</a></li>
+            </ul>
         </li>
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-            <a class="nav-link" data-toggle="dropdown" href="#">
-                <i class="far fa-bell"></i>
-                <span class="badge badge-warning navbar-badge">15</span>
+        <li class="nav-item dropdown mx-2">
+            <a class="nav-link position-relative" data-toggle="dropdown" href="#">
+                <i class="fas fa-bell fa-lg"></i>
+                <span
+                    class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-warning text-dark badge-notif">15</span>
             </a>
-            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <span class="dropdown-item dropdown-header">15 Notifications</span>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-envelope mr-2"></i> 4 new messages
-                    <span class="float-right text-muted text-sm">3 mins</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-users mr-2"></i> 8 friend requests
-                    <span class="float-right text-muted text-sm">12 hours</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-file mr-2"></i> 3 new reports
-                    <span class="float-right text-muted text-sm">2 days</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-            </div>
+            <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0">
+                <li class="dropdown-header bg-light py-2 px-3 border-bottom">
+                    <strong>15 Notifications</strong>
+                </li>
+
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-3" href="#">
+                        <div>
+                            <i class="fas fa-envelope me-2 text-primary"></i> 4 new messages
+                        </div>
+                        <small class="text-muted">3 mins</small>
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-3" href="#">
+                        <div>
+                            <i class="fas fa-users me-2 text-success"></i> 8 friend requests
+                        </div>
+                        <small class="text-muted">12 hours</small>
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center py-2 px-3" href="#">
+                        <div>
+                            <i class="fas fa-file me-2 text-warning"></i> 3 new reports
+                        </div>
+                        <small class="text-muted">2 days</small>
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="my-1">
+                </li>
+
+                <li>
+                    <a class="dropdown-item text-center text-primary fw-semibold py-2" href="#">See All
+                        Notifications</a>
+                </li>
+            </ul>
+
         </li>
         <li class="nav-item">
             <a class="nav-link" data-widget="fullscreen" href="#" role="button">
@@ -135,23 +117,31 @@
                 <i class="fas fa-th-large"></i>
             </a>
         </li>
-        
+
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
-                data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown"
+                role="button" data-toggle="dropdown" aria-expanded="false">
                 <img src="{{ asset('profile-picture/' . (session('profile_picture') ?? 'gambar.png')) }}"
                     onerror="this.src='{{ asset('profile-picture/gambar.png') }}'" alt="Profile"
-                    class="rounded-circle" width="30" height="30">
-
+                    class="rounded-circle border border-2 border-primary shadow-sm" width="32" height="32">
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2"
+                aria-labelledby="profileDropdown">
                 <li>
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                        Ganti Profile Picture
+                    <a class="dropdown-item d-flex align-items-center" href="#" data-toggle="modal"
+                        data-target="#uploadModal">
+                        <i class="fas fa-image me-2 text-primary"></i> Ganti Profile Picture
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center" href="{{ url('/logout') }}">
+                        <i class="fas fa-sign-out-alt me-2 text-danger"></i> Logout
                     </a>
                 </li>
             </ul>
         </li>
+
     </ul>
 </nav>
 
@@ -162,7 +152,7 @@
 
             <div class="modal-header">
                 <h5 class="modal-title" id="uploadModalLabel">Ganti Foto Profil</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data--dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form action="{{ url('upload-profile') }}" method="POST" enctype="multipart/form-data">
@@ -177,7 +167,7 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Upload</button>
                 </div>
             </form>
@@ -185,3 +175,16 @@
         </div>
     </div>
 </div>
+
+<style>
+    .badge-notif {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+        line-height: 1;
+    }
+
+    .dropdown-item.custom-hover:hover {
+        background-color: #f0f0f0;
+        color: #000;
+    }
+</style>

@@ -301,17 +301,17 @@ class LevelController extends Controller
                             $exists = LevelModel::where('level_id', $value['A'])
                                 ->orWhere('level_kode', $value['B'])
                                 ->exists();
-                            if ($exists) {
-                                throw new \Exception("Data dengan ID {$value['A']} atau kode {$value['B']} pada baris $baris sudah ada.");
+                            if(!$exists) {
+                                $insert[] = [
+                                    'level_id' => $value['A'],
+                                    'level_kode' => $value['B'],
+                                    'level_nama' => $value['C'],
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ];
+                                
                             }
 
-                            $insert[] = [
-                                'level_id' => $value['A'],
-                                'level_kode' => $value['B'],
-                                'level_nama' => $value['C'],
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
                         }
                     }
 

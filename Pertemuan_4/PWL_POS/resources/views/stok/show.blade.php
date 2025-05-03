@@ -4,15 +4,16 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">
-                    <i class="bi bi-person-lines-fill me-2"></i> Detail Pengguna
+                    <i class="bi bi-box-seam me-2"></i> Detail Stok #{{ $stok->stok_id ?? 'N/A' }}
                 </h4>
-                <a href="{{ url('user') }}" class="btn btn-sm btn-outline-secondary">
+                <a href="{{ url('stok') }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i>Tutup
                 </a>
+
             </div>
 
-            <!-- Content -->
-            @empty($user)
+            <!-- Table Content -->
+            @empty($stok)
                 <div class="alert alert-danger alert-dismissible">
                     <h5><i class="bi bi-exclamation-triangle-fill me-2"></i> Kesalahan!</h5>
                     Data yang Anda cari tidak ditemukan.
@@ -20,24 +21,28 @@
             @else
                 <table class="table table-bordered table-striped table-hover table-sm mb-0">
                     <tr>
-                        <th>ID</th>
-                        <td>{{ $user->user_id }}</td>
+                        <th>Stok ID</th>
+                        <td>{{ $stok->stok_id }}</td>
                     </tr>
                     <tr>
-                        <th>Level</th>
-                        <td>{{ $user->level->level_nama }}</td>
+                        <th>Supplier ID</th>
+                        <td>{{ $stok->supplier_id }}</td>
                     </tr>
                     <tr>
-                        <th>Username</th>
-                        <td>{{ $user->username }}</td>
+                        <th>Barang ID</th>
+                        <td>{{ $stok->barang_id }}</td>
                     </tr>
                     <tr>
-                        <th>Nama</th>
-                        <td>{{ $user->nama }}</td>
+                        <th>User ID</th>
+                        <td>{{ $stok->user_id }}</td>
                     </tr>
                     <tr>
-                        <th>Password</th>
-                        <td>********</td>
+                        <th>Jumlah Stok</th>
+                        <td>{{ $stok->stok_jumlah }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tanggal Stok</th>
+                        <td>{{ $stok->stok_tanggal }}</td>
                     </tr>
                 </table>
             @endempty
